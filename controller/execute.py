@@ -3,15 +3,17 @@ import traceback
 import time
 from service.hand_distance import HandDistance
 from service.hand_gesture import HandGesture
+from service.traffic_light import TrafficLight
 import service.motion as motion
 import service.headlight as headlight
 from flask_restful import Resource
 
 hand_gesture = HandGesture()
 hand_distance = HandDistance()
+traffic_light = TrafficLight()
 
 
-class ExecuteResource(Resource):
+class ExecuteController(Resource):
     def post(self):
         code = request.json.get("code")
         if not code:
@@ -19,6 +21,8 @@ class ExecuteResource(Resource):
 
         hand_gesture.stop()
         hand_distance.stop()
+        traffic_light.stop()
+
         print("Executing code:", code)
         result = {}
         try:
@@ -45,9 +49,10 @@ class ExecuteResource(Resource):
                 },
                 "time": time,
                 "motion": motion,
+                "headlight": headlight,
                 "hand_gesture": hand_gesture,
                 "hand_distance": hand_distance,
-                "headlight": headlight,
+                "traffic_light": traffic_light,
             }
             local_vars = {}
             exec(code, allowed_globals, local_vars)

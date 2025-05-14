@@ -5,7 +5,7 @@ from flasgger import swag_from
 import service.motion as motion
 
 
-class MotionResource(Resource):
+class MotionController(Resource):
     @swag_from(
         {
             "tags": ["Motion"],

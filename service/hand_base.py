@@ -1,9 +1,8 @@
 import time
 from typing import Callable, Generic, TypeVar
-import cv2
-from picamera2 import Picamera2
 import mediapipe as mp
-from .video import set_frame as set_video_frame
+from .base.video import show_frame
+from .base.camera import Camera
 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
@@ -13,7 +12,7 @@ T = TypeVar("T")
 
 class HandBase(Generic[T]):
     def __init__(self):
-        self.picam2: Picamera2 = None
+        self.camera: Camera = None
         self.hands = None
         self.running = False
         self.thread = None
@@ -29,20 +28,7 @@ class HandBase(Generic[T]):
         pass
 
     def run(self):
-
-        self.WINDOW_NAME = "HAND" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        print("Starting run..." + self.WINDOW_NAME)
-        picam2 = Picamera2()
-        self.picam2 = picam2
-        WINDOW_NAME = self.WINDOW_NAME
-        # 使用预设的处理好的配置
-        config = picam2.create_preview_configuration(
-            main={"format": "RGB888", "size": (1024, 768)}
-        )
-        picam2.configure(config)
-        picam2.start()
-        print("Preview size:", picam2.stream_configuration("main")["size"])
-
+        self.camera = Camera()
         # 设置 Hands 参数
         hands = mp_hands.Hands(
             static_image_mode=False,
@@ -53,8 +39,7 @@ class HandBase(Generic[T]):
         self.hands = hands
 
         while self.running:
-            frame = picam2.capture_array()
-            frame = cv2.flip(frame, 1)
+            frame = self.camera.capture_frame()
             results = hands.process(frame)
             value: T = None
             if results.multi_hand_landmarks:
@@ -71,9 +56,7 @@ class HandBase(Generic[T]):
 
                     value = self.process(hand_landmarks, hand_info, frame)
 
-            # 假设 frame 是高分辨率图像
-            # small_frame = cv2.resize(frame, (480, 320), interpolation=cv2.INTER_LINEAR)
-            set_video_frame(frame)
+            show_frame(frame)
             if self.last_value != value:
                 # 触发外部回调
                 self.callback(value)
@@ -81,7 +64,7 @@ class HandBase(Generic[T]):
             # print("Processing frame" + str(frame.shape))
             time.sleep(0.1)
 
-        set_video_frame(None)
+        show_frame(None)
 
     def start(self, callback: Callable[[T], None]):
         # 使用线程
@@ -113,12 +96,11 @@ class HandBase(Generic[T]):
         if self.hands:
             self.hands.close()
             self.hands = None
-        # 停止摄像头
-        picam2 = self.picam2
-        if picam2:
-            picam2.stop()
-            picam2.close()
-            self.picam2 = None
+        # # 停止摄像头
+        camera = self.camera
+        if camera:
+            camera.stop()
+            self.camera = None
 
         self.thread = None
         self.callback = None

@@ -6,7 +6,7 @@ frames = [None]
 event = threading.Event()
 
 
-def set_frame(frame):
+def show_frame(frame):
     frames[0] = frame
     event.set()
 
@@ -44,5 +44,5 @@ def consumer():
         time.sleep(0.1)
 
 
-t2 = threading.Thread(target=consumer)
+t2 = threading.Thread(target=consumer, daemon=True)
 t2.start()

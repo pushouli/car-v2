@@ -29,7 +29,10 @@ def consumer():
             if frame is None:
                 last = None
                 continue
-            cv2.imshow("Frame", frame)
+
+            #缩放为640x480
+            frame2 = cv2.resize(frame, (800, 450))
+            cv2.imshow("Frame", frame2)
             # print(frame)
             # prqint(last)
             if frame is not None and last is None:

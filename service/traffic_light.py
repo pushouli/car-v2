@@ -28,14 +28,17 @@ class TrafficLight:
             boxes = result.boxes  # 检测框对象
             for box in boxes:
                 conf = box.conf.item()  # 置信度
-                if conf <= 0.5:
+                if conf <= 0.3:
                     continue
                 cls_id = box.cls.item()  # 类别ID
                 cls_name = self.model.names[cls_id]  # 类别名称
-                if cls_name == "RedCircular":
+                # cls_name 以Red开头
+                if cls_name.startswith("Red"):
                     value = "red"
-                elif cls_name == "GreenCircular":
+                elif cls_name.startswith("Green"):
                     value = "green"
+                elif cls_name.startswith("Yellow"):
+                    value = "yellow"
             # print("检测到物体数量:", len(list))
             image = results[0].plot()  # 获取渲染后的图像
             show_frame(image)

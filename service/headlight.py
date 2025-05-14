@@ -1,6 +1,7 @@
 import time
 from .base import i2c
 
+
 class PCA9685:
     __MODE1 = 0x00
     __PRESCALE = 0xFE
@@ -48,19 +49,24 @@ pwm = PCA9685()
 pwm.set_pwm_freq(500)  # 50Hz，舵机常用频率
 
 
-def set_brightness(percent: int):
+def set_brightness(left: int, right: int):
     """
     控制灯的亮度。
     :param brightness_percent: 亮度百分比 (0-100)
     """
-    percent = max(0, min(100, percent))  # 限制范围
+    left = max(0, min(100, left))  # 限制范围
     pwm_max = 4095  # 12-bit 最大值
-    pulse = int(pwm_max * (percent / 100))
-    pwm.set_pwm(0, 0, pulse)
+    left = int(pwm_max * (left / 100))
+    pwm.set_pwm(0, 0, left)
+
+    right = max(0, min(100, right))  # 限制范围
+    right = int(pwm_max * (right / 100))
+    pwm.set_pwm(1, 0, right)
+
 
 if __name__ == "__main__":
     for i in range(0, 101, 10):
-        set_brightness(i)
+        set_brightness(i, i)
         time.sleep(1.5)
-    set_brightness(0)
+    set_brightness(0, 0)
     time.sleep(1)

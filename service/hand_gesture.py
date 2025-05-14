@@ -34,36 +34,63 @@ def is_thumb_open(landmarks) -> bool:
     return angle < 30  # 可调阈值
 
 
+def is_finger_open(landmarks, mcp_id, pip_id, tip_id):
+    """
+    判断一根手指是否伸直：通过 MCP→PIP 和 PIP→TIP 向量间的夹角判断
+    """
+
+    def vec(p1, p2):
+        return np.array([p2.x - p1.x, p2.y - p1.y, p2.z - p1.z])
+
+    v1 = vec(landmarks[mcp_id], landmarks[pip_id])
+    v2 = vec(landmarks[pip_id], landmarks[tip_id])
+
+    if np.linalg.norm(v1) == 0 or np.linalg.norm(v2) == 0:
+        return False
+
+    angle = math.degrees(
+        math.acos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+    )
+
+    return angle < 30  # 阈值可以调整
+
+
 # 判断每根手指是否伸直
 def get_fingers(hand_landmarks):
-    finger_tips_ids = [
-        mp_hands.HandLandmark.THUMB_TIP,
+    fingers = [0] * 5
+
+    # 拇指
+    if is_thumb_open(hand_landmarks.landmark):
+        fingers[0] = 1
+
+    # 其它四指：用角度判断
+    finger_mcp_ids = [
+        mp_hands.HandLandmark.INDEX_FINGER_MCP,
+        mp_hands.HandLandmark.MIDDLE_FINGER_MCP,
+        mp_hands.HandLandmark.RING_FINGER_MCP,
+        mp_hands.HandLandmark.PINKY_MCP,
+    ]
+    finger_pip_ids = [
+        mp_hands.HandLandmark.INDEX_FINGER_PIP,
+        mp_hands.HandLandmark.MIDDLE_FINGER_PIP,
+        mp_hands.HandLandmark.RING_FINGER_PIP,
+        mp_hands.HandLandmark.PINKY_PIP,
+    ]
+    finger_tip_ids = [
         mp_hands.HandLandmark.INDEX_FINGER_TIP,
         mp_hands.HandLandmark.MIDDLE_FINGER_TIP,
         mp_hands.HandLandmark.RING_FINGER_TIP,
         mp_hands.HandLandmark.PINKY_TIP,
     ]
 
-    finger_pip_ids = [
-        mp_hands.HandLandmark.THUMB_IP,  # 虽然拇指不用了，保留结构一致
-        mp_hands.HandLandmark.INDEX_FINGER_PIP,
-        mp_hands.HandLandmark.MIDDLE_FINGER_PIP,
-        mp_hands.HandLandmark.RING_FINGER_PIP,
-        mp_hands.HandLandmark.PINKY_PIP,
-    ]
-
-    fingers = [0] * 5  # 初始化五根手指的状态
-
-    # 拇指使用角度判断
-    # fingers.append(0 if is_thumb_open(hand_landmarks.landmark) else 1)
-    if is_thumb_open(hand_landmarks.landmark):
-        fingers[0] = 1
-
-    for i in range(1, 5):
-        tip_id = finger_tips_ids[i]
-        pip_id = finger_pip_ids[i]
-        if hand_landmarks.landmark[tip_id].y < hand_landmarks.landmark[pip_id].y:
-            fingers[i] = 1
+    for i in range(4):
+        if is_finger_open(
+            hand_landmarks.landmark,
+            finger_mcp_ids[i],
+            finger_pip_ids[i],
+            finger_tip_ids[i],
+        ):
+            fingers[i + 1] = 1
 
     return fingers
 
@@ -71,7 +98,9 @@ def get_fingers(hand_landmarks):
 class HandGesture(HandBase[list[int]]):
     def __init__(self):
         super().__init__()
-        self.WINDOW_NAME = "HAND_GESTURE" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        self.WINDOW_NAME = "HAND_GESTURE" + time.strftime(
+            "%Y-%m-%d %H:%M:%S", time.localtime()
+        )
 
     def process(self, hand_landmarks, hand_info, frame):
         # 左右手信息
@@ -84,29 +113,31 @@ class HandGesture(HandBase[list[int]]):
         cv2.putText(
             frame,
             f"{hand_label} Hand: {fingers} fingers",
-            (10, 50 if hand_label == "Right" else 100),
+            (10, 100 if hand_label == "Right" else 100),
             cv2.FONT_HERSHEY_SIMPLEX,
-            1,
-            (0, 255, 0),
-            2,
+            4,
+            (0, 0, 0),
+            5,
         )
         return fingers
 
     def start(self, callback: Callable[[list[int]], None]):
-        #处理回调函数的参数为None时，转换为空列表
+        # 处理回调函数的参数为None时，转换为空列表
         def wrapped_callback(fingers):
             if fingers is None:
-                fingers = []
+                fingers = [0, 0, 0, 0, 0]
             callback(fingers)
+
         super().start(wrapped_callback)
 
 
 if __name__ == "__main__":
 
     hand_gesture = HandGesture()
+
     def print_fingers(fingers: list[int]) -> None:
         print(f"Detected fingers: {fingers}")
-    
+
     hand_gesture.start(print_fingers)
     time.sleep(5)
     hand_gesture.stop()

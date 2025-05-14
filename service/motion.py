@@ -4,7 +4,6 @@ from .base import i2c
 import struct
 
 
-
 # 设置四路电机驱动模块的I2C地址
 MOTOR_ADDR = 0x34
 
@@ -35,6 +34,8 @@ MotorType = MOTOR_TYPE_JGB37_520_12V_110RPM
 MotorEncoderPolarity = 1
 
 bus = i2c
+
+
 def _motor_init():  # 电机初始化
     print("motor_init")
     bus.write_byte_data(MOTOR_ADDR, MOTOR_TYPE_ADDR, MotorType)  # 设置电机类型
@@ -57,13 +58,14 @@ _motor_init()
 
 
 # 固定参数（编码器与轮子参数）
-ENCODER_PULSES_PER_REV: int = 44         # 电机轴每圈脉冲数
-GEAR_RATIO: int = 45                     # 减速比
-WHEEL_DIAMETER_MM: float = 54.0          # 轮子直径（单位：mm）
+ENCODER_PULSES_PER_REV: int = 44  # 电机轴每圈脉冲数
+GEAR_RATIO: int = 34  # 减速比
+WHEEL_DIAMETER_MM: float = 54.0  # 轮子直径（单位：mm）
 
 # 推导值
 PULSES_PER_WHEEL_REV: int = ENCODER_PULSES_PER_REV * GEAR_RATIO
 WHEEL_CIRCUMFERENCE_MM: float = math.pi * WHEEL_DIAMETER_MM  # ≈ 172.8 mm
+
 
 def speed_to_setting(speed_mm_per_s: float) -> int:
     """
@@ -75,8 +77,11 @@ def speed_to_setting(speed_mm_per_s: float) -> int:
     返回:
         int: 驱动板要求的速度设定值（单位：脉冲数 / 10ms）
     """
-    pulses_per_second: float = (speed_mm_per_s / WHEEL_CIRCUMFERENCE_MM) * PULSES_PER_WHEEL_REV
+    pulses_per_second: float = (
+        speed_mm_per_s / WHEEL_CIRCUMFERENCE_MM
+    ) * PULSES_PER_WHEEL_REV
     return round(pulses_per_second / 100)
+
 
 def walk(left: float, right: float):
     """
@@ -84,7 +89,7 @@ def walk(left: float, right: float):
     :param left: 左电机速度，范围[-400, 400]
     :param right: 右电机速度，范围[-400, 400]
     """
-    #输入电压
+    # 输入电压
     voltage = get_battery_v()
     print("V = {0}mV".format(voltage))
     print("left: ", left, " right: ", right)
@@ -96,7 +101,10 @@ def walk(left: float, right: float):
     right = max(-MAX_SPEED, min(MAX_SPEED, right))
     print("left2: ", left, " right2: ", right)
     # 计算速度值
-    bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR,[int(left), int(right), 0, 0])
+    bus.write_i2c_block_data(
+        MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, [int(right), (left), 0, 0]
+    )
+
 
 if __name__ == "__main__":
     # 测试代码
@@ -107,4 +115,3 @@ if __name__ == "__main__":
     # walk(-100, -100)
     time.sleep(3)
     walk(0, 0)
-    

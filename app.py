@@ -4,6 +4,7 @@ from flasgger import Swagger
 from controller.motion import MotionController
 from controller.execute import ExecuteController
 from controller.visual import VisualController
+from controller.visual import FrontDistanceController
 
 from flask_cors import CORS
 
@@ -18,8 +19,9 @@ def home():
 
 
 api.add_resource(MotionController, "/api/motion")
-api.add_resource(ExecuteController, "/api/exec", endpoint="exec")
-api.add_resource(VisualController, "/api/visual", endpoint="visual")
+api.add_resource(ExecuteController, "/api/exec")
+api.add_resource(VisualController, "/api/visual")
+api.add_resource(FrontDistanceController, "/api/front_distance")
 swagger = Swagger(app)
 
 if __name__ == "__main__":

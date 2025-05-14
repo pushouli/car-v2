@@ -40,6 +40,16 @@ class FrontDistance:
         # self.run()
         print("FrontDistance started.")
 
+    @classmethod
+    def get(cls):
+        sensor = DistanceSensor(echo=20, trigger=16)
+        value = sensor.distance * 100
+        sensor.close()
+        value = int(value)
+        if value >= 100:
+            value = -1
+        return value
+
     def wait(self):
         # 等待线程结束
         if self.thread is not None:

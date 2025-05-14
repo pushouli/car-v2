@@ -5,6 +5,7 @@ from flask_restful import Resource
 import requests
 
 from service.base.camera import Camera
+from service.front_distance import FrontDistance
 
 
 class VisualController(Resource):
@@ -69,6 +70,12 @@ class VisualController(Resource):
         )
         response.raise_for_status()
         return response.json()
+
+
+class FrontDistanceController(Resource):
+    def post(self):
+        value = FrontDistance.get()
+        return jsonify({"distance": value})
 
 
 if __name__ == "__main__":
